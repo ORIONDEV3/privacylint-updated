@@ -1,0 +1,98 @@
+databases:
+  - name: privacylint-updated-db
+    plan: free
+    region: oregon
+    databaseName: privacylint
+    user: privacylint
+
+envVarGroups:
+  - name: privacylint-updated-shared
+    envVars:
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: CSRF_SECRET
+        generateValue: true
+
+services:
+  - type: web
+    name: privacylint-updated-auth
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: services/auth
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: privacylint-updated-shared
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_HOST
+        value: 0.0.0.0
+      - key: AUTH_PORT
+        value: "10000"
+      - key: AUTH_ALLOW_PASSWORD_ONLY
+        value: "true"
+      - key: AUTH_OTP_MODE
+        value: password
+      - key: OTP_HMAC_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: privacylint-updated-db
+          property: connectionString
+      - key: WEB_ORIGIN
+        fromService:
+          type: web
+          name: privacylint-updated-web
+          envVarKey: RENDER_EXTERNAL_URL
+
+  - type: web
+    name: privacylint-updated-engine
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./services/engine/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: privacylint-updated-shared
+      - key: NODE_ENV
+        value: production
+      - key: REQUIRE_AUTH
+        value: "true"
+      - key: PORT
+        value: "8000"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: privacylint-updated-db
+          property: connectionString
+      - key: WEB_ORIGIN
+        fromService:
+          type: web
+          name: privacylint-updated-web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash
+
+  - type: web
+    runtime: static
+    name: privacylint-updated-web
+    plan: free
+    region: oregon
+    rootDir: apps/web
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_AUTH_URL
+        fromService:
+          type: web
+          name: privacylint-updated-auth
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: VITE_ENGINE_URL
+        fromService:
+          type: web
+          name: privacylint-updated-engine
+          envVarKey: RENDER_EXTERNAL_URL
