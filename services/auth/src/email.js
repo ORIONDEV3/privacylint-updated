@@ -18,7 +18,7 @@ function safeSmtpError(error) {
   };
 }
 
-if (config.smtp.user && smtpPass) {
+if (config.otpMode === "email" && config.smtp.user && smtpPass) {
   transport.verify()
     .then(() => console.info("PrivacyLint SMTP transport verified"))
     .catch((error) => console.error("PrivacyLint SMTP verification failed", safeSmtpError(error)));

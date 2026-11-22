@@ -37,7 +37,7 @@ export default function Login() {
       <TextField label="Work email" name="email" type="email" autoComplete="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
       <div className="field-label-row"><label htmlFor="password">Password</label><Link className="inline-link" to="/forgot-password">Forgot password?</Link></div>
       <PasswordField label="" id="password" name="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-      <div className="secure-note"><span className="tiny-lock" /> {emailOtpEnabled ? "A sign-in code will be sent to your email after password check" : "Email verification is skipped until SMTP is configured"}</div>
+      <div className="secure-note"><span className="tiny-lock" /> {emailOtpEnabled ? "A sign-in code will be sent to your email after password check" : "Email codes are off; sign in with your password"}</div>
       <SubmitButton loading={loading}>Continue securely</SubmitButton>
     </form>
     <div className="form-divider"><span /> or <span /></div>
