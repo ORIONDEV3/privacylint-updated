@@ -14,7 +14,9 @@ export function loadConfig(env = process.env) {
   const smtpPass = env.SMTP_PASS || "";
   const otpMode = (env.AUTH_OTP_MODE || (env.NODE_ENV === "production" || (smtpUser && smtpPass) ? "email" : "password")).toLowerCase();
   if (!["email", "password"].includes(otpMode)) throw new Error("AUTH_OTP_MODE must be 'email' or 'password'");
-  if (env.NODE_ENV === "production" && otpMode !== "email") throw new Error("AUTH_OTP_MODE=password is only allowed outside production");
+  if (env.NODE_ENV === "production" && otpMode !== "email" && env.AUTH_ALLOW_PASSWORD_ONLY !== "true") {
+    throw new Error("Password-only sign-in in production requires AUTH_ALLOW_PASSWORD_ONLY=true");
+  }
   return Object.freeze({
     nodeEnv: env.NODE_ENV || "development",
     port: Number(env.AUTH_PORT || 4000),
