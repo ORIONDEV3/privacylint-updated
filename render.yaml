@@ -83,7 +83,7 @@ services:
     plan: free
     region: oregon
     rootDir: apps/web
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --include=dev && npm run build
     staticPublishPath: dist
     envVars:
       - key: VITE_AUTH_URL
@@ -96,3 +96,4 @@ services:
           type: web
           name: privacylint-updated-engine
           envVarKey: RENDER_EXTERNAL_URL
+
