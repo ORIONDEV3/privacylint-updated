@@ -1,0 +1,19 @@
+{
+  "name": "privacylint",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:engine": "node scripts/engine.mjs dev",
+    "build": "npm --prefix apps/web run build && npm --prefix services/auth run check",
+    "test": "npm --prefix services/auth test",
+    "test:engine": "node scripts/engine.mjs test",
+    "test:watch": "npm --prefix services/auth test -- --watch"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.3.2",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3"
+  }
+}
+

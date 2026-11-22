@@ -1,0 +1,90 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-privacylint}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-privacylint}
+      POSTGRES_DB: ${POSTGRES_DB:-privacylint}
+    ports: ["5432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-privacylint} -d ${POSTGRES_DB:-privacylint}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  neo4j:
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-change-me-in-local-env}
+    ports: ["7474:7474", "7687:7687"]
+    volumes: ["neo4j_data:/data"]
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    ports: ["1025:1025", "8025:8025"]
+
+  auth:
+    build: ./services/auth
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-privacylint}:${POSTGRES_PASSWORD:-privacylint}@postgres:5432/${POSTGRES_DB:-privacylint}
+      SMTP_HOST: mailhog
+      AUTH_OTP_MODE: ${AUTH_OTP_MODE:-email}
+      WEB_ORIGIN: http://localhost:5173,http://127.0.0.1:5173
+      AUTH_HOST: 0.0.0.0
+      AUTH_PORT: 4000
+    ports: ["4000:4000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      mailhog: { condition: service_started }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  engine:
+    build:
+      context: .
+      dockerfile: services/engine/Dockerfile
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-privacylint}:${POSTGRES_PASSWORD:-privacylint}@postgres:5432/${POSTGRES_DB:-privacylint}
+      REDIS_URL: redis://redis:6379
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-change-me-in-local-env}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
+      PRIVACYLINT_ROOT: /app
+      SESSION_SECRET: ${SESSION_SECRET}
+      CSRF_SECRET: ${CSRF_SECRET}
+      REQUIRE_AUTH: ${ENGINE_REQUIRE_AUTH:-true}
+      NODE_ENV: ${NODE_ENV:-development}
+      WEB_ORIGIN: http://localhost:5173,http://127.0.0.1:5173
+    ports: ["8000:8000"]
+    depends_on:
+      auth: { condition: service_healthy }
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  web:
+    build: ./apps/web
+    environment:
+      VITE_AUTH_URL: http://localhost:4000
+    ports: ["5173:80"]
+    depends_on: [auth]
+
+volumes:
+  postgres_data:
+  neo4j_data:
+

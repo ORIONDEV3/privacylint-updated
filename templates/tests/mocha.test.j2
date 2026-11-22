@@ -1,0 +1,15 @@
+const fs = require("node:fs");
+const path = require("node:path");
+const assert = require("node:assert/strict");
+
+describe("PrivacyLint {{ rule_id }} regression", () => {
+  it({{ title|tojson }}, () => {
+    const source = fs.readFileSync(path.resolve(__dirname, {{ source_relative_path|tojson }}), "utf8");
+    const lines = source.split(/\r?\n/);
+    const sinkPattern = new RegExp({{ sink_pattern|tojson }}, "i");
+    const piiPattern = new RegExp({{ pii_pattern|tojson }}, "i");
+    const safePattern = new RegExp({{ safe_pattern|tojson }}, "i");
+    const relevant = lines.filter((line) => sinkPattern.test(line) && piiPattern.test(line));
+    assert.ok(relevant.every((line) => safePattern.test(line)), "personal data must be protected at this sink");
+  });
+});

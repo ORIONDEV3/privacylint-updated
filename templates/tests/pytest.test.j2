@@ -1,0 +1,14 @@
+from pathlib import Path
+import re
+
+
+SOURCE_FILE = Path(__file__).resolve().parents[2] / {{ source_repo_path|tojson }}
+SINK_PATTERN = re.compile({{ sink_pattern|tojson }}, re.I)
+PII_PATTERN = re.compile({{ pii_pattern|tojson }}, re.I)
+SAFE_PATTERN = re.compile({{ safe_pattern|tojson }}, re.I)
+
+
+def test_privacylint_{{ rule_id|lower }}_sink_is_protected():
+    source = SOURCE_FILE.read_text(encoding="utf-8")
+    relevant = [line for line in source.splitlines() if SINK_PATTERN.search(line) and PII_PATTERN.search(line)]
+    assert all(SAFE_PATTERN.search(line) for line in relevant), "personal data must be protected at this sink"

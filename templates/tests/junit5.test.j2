@@ -1,0 +1,21 @@
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.regex.Pattern;
+import org.junit.jupiter.api.Test;
+
+class PrivacyLint{{ rule_id }}RegressionTest {
+  @Test
+  void {{ method_name }}() throws IOException {
+    Path sourceFile = Path.of({{ source_repo_path|tojson }});
+    String source = Files.readString(sourceFile);
+    Pattern sink = Pattern.compile({{ sink_pattern|tojson }}, Pattern.CASE_INSENSITIVE);
+    Pattern pii = Pattern.compile({{ pii_pattern|tojson }}, Pattern.CASE_INSENSITIVE);
+    Pattern safe = Pattern.compile({{ safe_pattern|tojson }}, Pattern.CASE_INSENSITIVE);
+    boolean unsafe = source.lines().filter(line -> sink.matcher(line).find() && pii.matcher(line).find())
+        .anyMatch(line -> !safe.matcher(line).find());
+    assertTrue(!unsafe, "Personal data must be protected at this sink");
+  }
+}

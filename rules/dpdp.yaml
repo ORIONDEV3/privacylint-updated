@@ -1,0 +1,158 @@
+version: 1
+rules:
+  - id: PL001
+    name: Personal data written to logs
+    languages: [javascript, typescript, tsx, python, java, c, cpp]
+    sources: [request input, PII field, validated PII literal]
+    sinks: [console.log, logger, print, printf, System.out]
+    sanitizers: [mask, redact, truncate, hash]
+    gates: []
+    detector: pii_log
+    severity: high
+    dpdp_mapping: "§8(5)"
+    remediation: Redact or omit personal data before writing diagnostic logs.
+    patch_template_id: mask_log_value
+
+  - id: PL002
+    name: Personal data returned by an API
+    languages: [javascript, typescript, tsx, python, java]
+    sources: [request input, PII field, validated PII literal]
+    sinks: [response.json, response.send, jsonify, ResponseEntity]
+    sanitizers: [dto projection, redact, mask]
+    gates: [authorization]
+    detector: pii_response
+    severity: high
+    dpdp_mapping: "§8(5)"
+    remediation: Return an explicit response DTO containing only fields required by the caller.
+    patch_template_id: response_projection
+
+  - id: PL003
+    name: Personal data stored without an encryption control
+    languages: [javascript, typescript, tsx, python, java, sql]
+    sources: [request input, PII field, validated PII literal]
+    sinks: [database insert, database create, database update]
+    sanitizers: [encrypt, encrypted column, tokenization]
+    gates: []
+    detector: plaintext_storage
+    severity: critical
+    dpdp_mapping: "§8(5)"
+    remediation: Encrypt sensitive fields with a managed key or use a tokenized storage design.
+    patch_template_id: encrypt_store_value
+
+  - id: PL004
+    name: PII route has no visible authorization gate
+    languages: [javascript, typescript, tsx, python, java]
+    sources: [route path, controller PII fields]
+    sinks: [public HTTP route]
+    sanitizers: []
+    gates: [auth, authenticate, requireAuth, requireRole, protect, authorize]
+    detector: missing_auth_gate
+    severity: high
+    dpdp_mapping: "§8(5)"
+    remediation: Add an authorization middleware and verify the caller may access the requested record.
+    patch_template_id: add_auth_middleware
+
+  - id: PL005
+    name: Weak MD5 or SHA-1 password hash
+    languages: [javascript, typescript, tsx, python, java, c, cpp]
+    sources: [password]
+    sinks: [md5, sha1]
+    sanitizers: [bcrypt, argon2, scrypt, pbkdf2]
+    gates: []
+    detector: weak_hash
+    severity: high
+    dpdp_mapping: "§8(5)"
+    remediation: Use an adaptive password hashing function such as scrypt, bcrypt, or Argon2id.
+    patch_template_id: upgrade_password_hash
+
+  - id: PL006
+    name: Personal data sent to a third party
+    languages: [javascript, typescript, tsx, python, java]
+    sources: [request input, PII field, validated PII literal]
+    sinks: [fetch, axios, requests, httpx, SDK client]
+    sanitizers: [redact, data minimization, consent]
+    gates: [consent]
+    detector: third_party_pii
+    severity: high
+    dpdp_mapping: "§5"
+    remediation: Minimize the payload and confirm a valid purpose and consent before transfer.
+    patch_template_id: minimize_third_party_payload
+
+  - id: PL007
+    name: Personal data stored in browser storage
+    languages: [javascript, typescript, tsx]
+    sources: [request input, PII field, validated PII literal]
+    sinks: [localStorage, sessionStorage, IndexedDB]
+    sanitizers: [remove after use, encrypted client store]
+    gates: []
+    detector: client_storage_pii
+    severity: medium
+    dpdp_mapping: "§8(5)"
+    remediation: Keep sensitive data server-side and store only a short-lived opaque reference in the browser.
+    patch_template_id: remove_client_pii
+
+  - id: PL008
+    name: Hardcoded credential or secret
+    languages: [javascript, typescript, tsx, python, java, c, cpp, yaml]
+    sources: [literal credential]
+    sinks: [source repository]
+    sanitizers: [environment variable, secret manager]
+    gates: []
+    detector: hardcoded_secret
+    severity: critical
+    dpdp_mapping: "§8(5)"
+    remediation: Revoke the exposed credential and load its replacement from a managed secret store.
+    patch_template_id: move_secret_to_env
+
+  - id: PL009
+    name: Children's data processed without a visible consent gate
+    languages: [javascript, typescript, tsx, python, java, sql]
+    sources: [age, child, minor, guardian]
+    sinks: [PII collection or processing]
+    sanitizers: []
+    gates: [parental consent, guardian consent]
+    detector: child_consent
+    severity: critical
+    dpdp_mapping: "§9"
+    remediation: Verify verifiable parental consent before processing a child's personal data.
+    patch_template_id: require_parental_consent
+
+  - id: PL010
+    name: Stored personal data has no visible erasure path
+    languages: [javascript, typescript, tsx, python, java, sql]
+    sources: [PII field, database column]
+    sinks: [database store]
+    sanitizers: [delete, erase, anonymize, retention policy]
+    gates: []
+    detector: missing_erasure
+    severity: medium
+    dpdp_mapping: "§8(5)"
+    remediation: Implement and document a retention schedule and an erasure path for the stored field.
+    patch_template_id: add_erasure_path
+
+  - id: PL011
+    name: Personal data sent over cleartext HTTP
+    languages: [javascript, typescript, tsx, python, java]
+    sources: [request input, PII field, validated PII literal]
+    sinks: [http URL]
+    sanitizers: [https]
+    gates: []
+    detector: pii_http
+    severity: high
+    dpdp_mapping: "§8(5)"
+    remediation: Use HTTPS and reject insecure transport for personal-data requests.
+    patch_template_id: enforce_https
+
+  - id: PL012
+    name: Personal data included in an error message
+    languages: [javascript, typescript, tsx, python, java, c, cpp]
+    sources: [request input, PII field, validated PII literal]
+    sinks: [exception message, error response]
+    sanitizers: [generic error, redaction]
+    gates: []
+    detector: pii_error
+    severity: medium
+    dpdp_mapping: "§8(5)"
+    remediation: Return a generic error identifier and keep personal data out of exception text.
+    patch_template_id: generic_error_message
+
