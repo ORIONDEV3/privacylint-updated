@@ -106,8 +106,9 @@ async function issueOtp({ userId, email, purpose, isResend = false }) {
 }
 
 function setSessionCookie(res, token) {
+  // Render gives the web and auth services separate onrender.com sites; cross-site fetch needs None + Secure.
   res.cookie(COOKIE_NAME, signCookie(token, config.sessionSecret), {
-    httpOnly: true, secure: config.secureCookies, sameSite: "lax", path: "/", maxAge: SESSION_TTL_HOURS * 60 * 60 * 1000
+    httpOnly: true, secure: config.secureCookies, sameSite: config.secureCookies ? "none" : "lax", path: "/", maxAge: SESSION_TTL_HOURS * 60 * 60 * 1000
   });
 }
 
@@ -364,7 +365,7 @@ router.post("/logout", async (req, res, next) => {
       const { rows } = await pool.query("DELETE FROM sessions WHERE token_hash=$1 RETURNING user_id", [hashOpaqueToken(token)]);
       if (rows[0]) await audit(rows[0].user_id, "logout", "success");
     }
-    res.clearCookie(COOKIE_NAME, { httpOnly: true, secure: config.secureCookies, sameSite: "lax", path: "/" });
+    res.clearCookie(COOKIE_NAME, { httpOnly: true, secure: config.secureCookies, sameSite: config.secureCookies ? "none" : "lax", path: "/" });
     res.status(204).end();
   } catch (error) { next(error); }
 });
