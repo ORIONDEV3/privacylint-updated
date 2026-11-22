@@ -80,8 +80,6 @@ services:
   - type: web
     runtime: static
     name: privacylint-updated-web
-    plan: free
-    region: oregon
     rootDir: apps/web
     buildCommand: npm ci --include=dev && npm run build
     staticPublishPath: dist
