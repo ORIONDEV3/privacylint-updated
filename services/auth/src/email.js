@@ -2,12 +2,27 @@ import nodemailer from "nodemailer";
 import { loadConfig } from "./config.js";
 
 const config = loadConfig();
+const smtpPass = config.smtp.pass.replace(/\s+/g, "");
 const transport = nodemailer.createTransport({
   host: config.smtp.host, port: config.smtp.port,
   secure: config.smtp.port === 465,
-  ...(config.smtp.user ? { auth: { user: config.smtp.user, pass: config.smtp.pass } } : {}),
+  ...(config.smtp.user ? { auth: { user: config.smtp.user, pass: smtpPass } } : {}),
   connectionTimeout: 5000, greetingTimeout: 5000, socketTimeout: 10000
 });
+
+function safeSmtpError(error) {
+  return {
+    code: error?.code || null,
+    responseCode: error?.responseCode || null,
+    command: error?.command || null
+  };
+}
+
+if (config.smtp.user && smtpPass) {
+  transport.verify()
+    .then(() => console.info("PrivacyLint SMTP transport verified"))
+    .catch((error) => console.error("PrivacyLint SMTP verification failed", safeSmtpError(error)));
+}
 
 const templates = {
   register: { subject: "Verify your PrivacyLint account", title: "Confirm your email", intro: "Use this one-time code to finish creating your PrivacyLint account." },

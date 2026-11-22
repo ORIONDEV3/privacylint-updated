@@ -97,6 +97,11 @@ async function issueOtp({ userId, email, purpose, isResend = false }) {
   );
   try { await sendOtp({ to: normalized, otp, purpose }); }
   catch (error) {
+    console.error("PrivacyLint OTP email delivery failed", {
+      code: error?.code || null,
+      responseCode: error?.responseCode || null,
+      command: error?.command || null
+    });
     await pool.query("UPDATE otp_codes SET consumed_at=NOW() WHERE id=$1", [id]);
     const deliveryError = new Error("Email delivery is temporarily unavailable. Please try again.", { cause: error });
     deliveryError.status = 503;
