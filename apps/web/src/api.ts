@@ -1,6 +1,6 @@
-const API = import.meta.env.VITE_AUTH_URL || "http://localhost:4000";
+const API = import.meta.env.PROD ? "" : (import.meta.env.VITE_AUTH_URL || "http://localhost:4000");
 export const AUTH_API = API;
-export const ENGINE_API = import.meta.env.VITE_ENGINE_URL || "http://localhost:8000";
+export const ENGINE_API = import.meta.env.PROD ? "/engine" : (import.meta.env.VITE_ENGINE_URL || "http://localhost:8000");
 let cachedCsrf: string | null = null;
 
 export class ApiError extends Error {

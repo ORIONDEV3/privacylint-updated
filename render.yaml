@@ -95,17 +95,15 @@ services:
     staticPublishPath: dist
     routes:
       - type: rewrite
+        source: /api/*
+        destination: https://privacylint-updated-auth.onrender.com/api/*
+      - type: rewrite
+        source: /engine/*
+        destination: https://privacylint-updated-engine.onrender.com/*
+      - type: rewrite
         source: /*
         destination: /index.html
     envVars:
-      - key: VITE_AUTH_URL
-        fromService:
-          type: web
-          name: privacylint-updated-auth
-          envVarKey: RENDER_EXTERNAL_URL
       - key: VITE_ENGINE_URL
-        fromService:
-          type: web
-          name: privacylint-updated-engine
-          envVarKey: RENDER_EXTERNAL_URL
+        value: /engine
 
