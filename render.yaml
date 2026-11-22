@@ -34,7 +34,7 @@ services:
       - key: AUTH_ALLOW_PASSWORD_ONLY
         value: "true"
       - key: AUTH_OTP_MODE
-        value: email
+        value: password
       - key: OTP_HMAC_SECRET
         generateValue: true
       - key: SMTP_HOST
